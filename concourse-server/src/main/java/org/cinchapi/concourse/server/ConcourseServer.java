@@ -58,6 +58,7 @@ import org.cinchapi.concourse.lang.PostfixNotationSymbol;
 import org.cinchapi.concourse.lang.Symbol;
 import org.cinchapi.concourse.lang.Translate;
 import org.cinchapi.concourse.security.AccessManager;
+import org.cinchapi.concourse.server.cluster.Node;
 import org.cinchapi.concourse.server.io.FileSystem;
 import org.cinchapi.concourse.server.jmx.ConcourseServerMXBean;
 import org.cinchapi.concourse.server.jmx.ManagedOperation;
@@ -110,7 +111,7 @@ import static org.cinchapi.concourse.server.GlobalState.*;
  * 
  * @author jnelson
  */
-public class ConcourseServer implements
+public class ConcourseServer extends Node implements
         ConcourseService.Iface,
         ConcourseServerMXBean {
 
@@ -262,9 +263,9 @@ public class ConcourseServer implements
      * @throws TTransportException
      */
     public ConcourseServer() throws TTransportException {
-        this(CLIENT_PORT, BUFFER_DIRECTORY, DATABASE_DIRECTORY);
+        this(CLIENT_PORT, BUFFER_DIRECTORY, DATABASE_DIRECTORY, CLUSTER);
     }
-
+    
     /**
      * Construct a ConcourseServer that listens on {@code port} and store data
      * in {@code dbStore} and {@code bufferStore}.
@@ -276,6 +277,22 @@ public class ConcourseServer implements
      */
     public ConcourseServer(int port, String bufferStore, String dbStore)
             throws TTransportException {
+        this(port, bufferStore, dbStore, CLUSTER);
+    }
+
+    /**
+     * Construct a ConcourseServer that listens on {@code port} and store data
+     * in {@code dbStore} and {@code bufferStore}.
+     * 
+     * @param port
+     * @param bufferStore
+     * @param dbStore
+     * @param cluster
+     * @throws TTransportException
+     */
+    public ConcourseServer(int port, String bufferStore, String dbStore,
+            List<String> cluster) throws TTransportException {
+        super(cluster);
         Preconditions.checkState(!bufferStore.equalsIgnoreCase(dbStore),
                 "Cannot store buffer and database files in the same directory. "
                         + "Please check concourse.prefs.");
@@ -407,7 +424,8 @@ public class ConcourseServer implements
         checkAccess(creds, transaction);
         try {
             Compoundable store = getStore(transaction, env);
-            Map<Long, Set<TObject>> result = PrettyLinkedHashMap.newPrettyLinkedHashMap();
+            Map<Long, Set<TObject>> result = PrettyLinkedHashMap
+                    .newPrettyLinkedHashMap();
             Map<Long, String> history = store.audit(key, record);
             for (Long timestamp : history.keySet()) {
                 Set<TObject> values = store.fetch(key, record, timestamp);
@@ -687,7 +705,8 @@ public class ConcourseServer implements
 
     @Override
     public String listAllUserSessions() {
-        return TCollections.toOrderedListString(manager.describeAllAccessTokens());
+        return TCollections.toOrderedListString(manager
+                .describeAllAccessTokens());
     }
 
     @Override

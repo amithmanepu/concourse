@@ -27,14 +27,18 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import org.cinchapi.concourse.annotate.NonPreference;
 import org.cinchapi.concourse.config.ConcourseConfiguration;
+import org.cinchapi.concourse.util.Networking;
 
 import ch.qos.logback.classic.Level;
 
+import com.google.common.base.Functions;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
@@ -101,6 +105,12 @@ public final class GlobalState {
      * services on this host.
      */
     public static int CLIENT_PORT = 1717;
+
+    /**
+     * A comma separated list of nodes addresses (i.e. host1:port1, host2:port2)
+     * that form the distributed cluster.
+     */
+    public static List<String> CLUSTER;
 
     /**
      * The port on which the ShutdownRunner listens. Choose a port between
@@ -191,6 +201,9 @@ public final class GlobalState {
 
             CLIENT_PORT = config.getInt("client_port", CLIENT_PORT);
 
+            CLUSTER = Lists.transform(config.getList("cluster"),
+                    Functions.toStringFunction());
+
             SHUTDOWN_PORT = config.getInt("shutdown_port", SHUTDOWN_PORT);
 
             JMX_PORT = config.getInt("jmx_port", JMX_PORT);
@@ -237,6 +250,14 @@ public final class GlobalState {
      */
     @NonPreference
     public static String ACCESS_FILE = ".access";
+
+    /**
+     * The port that this node uses for communication with other nodes in the
+     * distributed cluster. This value is not directly configurable by users,
+     * but it is calculated based on the {@link #CLIENT_PORT}.
+     */
+    @NonPreference
+    public static int CHATTER_PORT = Networking.getCompanionPort(CLIENT_PORT);
 
     // ========================================================================
 
